@@ -1,5 +1,4 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -84,16 +83,7 @@ public static class IndexAccessor
         return IndexFieldDescriptor<TObject, TIndex>.BinarySearch(objects, index);
     }
 
-    private readonly struct Field
-    {
-        public Field(int offset, int size)
-        {
-            Offset = offset;
-            Size = size;
-        }
-        public readonly int Offset;
-        public readonly int Size;
-    }
+    private readonly record struct Field(int Offset, int Size);
 
     private static class IndexFieldDescriptor<TObject, TIndex>
         where TObject : struct
@@ -108,21 +98,15 @@ public static class IndexAccessor
             else
             {
                 if (indexFieldOffset != descriptor.Offset)
-                    throw new InvalidOperationException("Attempt to owerwrite offset with different value");
+                    throw new InvalidOperationException("Attempt to overwrite offset with different value");
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsRegistered()
-        {
-            return descriptor.Size != 0;
-        }
+        public static bool IsRegistered() => descriptor.Size != 0;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsNotRegistered()
-        {
-            return descriptor.Size == 0;
-        }
+        private static bool IsNotRegistered() => descriptor.Size == 0;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static TIndex GetIndex(ref TObject obj)
