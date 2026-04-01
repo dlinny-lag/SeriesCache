@@ -34,7 +34,7 @@ internal class RangesSet<TObject, TIndex>
     public void Clear() => ranges.Clear();
 
     /// <summary>
-    /// Adds a range to the set. If adding range and existing one(s) are instersecting they will be merged for further performance improvement
+    /// Adds a range to the set. If adding range and existing one(s) are intersecting they will be merged for further performance improvement
     /// </summary>
     /// <param name="objects"></param>
     /// <param name="mergeDistance">Merge ranges if distance between them is less or equal to <paramref name="mergeDistance"/></param>
@@ -50,7 +50,7 @@ internal class RangesSet<TObject, TIndex>
             do
             {
                 // is current range intersects adding range or is one of ranges inside of another range?
-                var testResult = adding.TestInstersection(start.Value);
+                var testResult = adding.TestIntersection(start.Value);
                 if (testResult.IsIntersection(mergeDistance))
                 {
                     adding = adding.Merge(start.Value, settings.OnOverwrite);
@@ -122,22 +122,23 @@ internal class RangesSet<TObject, TIndex>
 
     private Tree.Node Find(TIndex index)
     {
-        DistanceWithoutValueReadonly<Range<TObject, TIndex>, TIndex> distanceFunc 
-            = (ref readonly Range<TObject, TIndex> item) => 
-            { 
-                var rangeScope = index.IsInRange(item.Min, item.Max);
-                switch(rangeScope)
-                {
-                    case InRange.In:
-                        return TIndex.Zero;
-                    case InRange.BelowLower:
-                        return index - item.Min; // TODO: why it gives same result as item.Min - index? missing test?
-                    case InRange.AboveHigher:
-                        return index - item.Max;
-                }
-                throw new NotImplementedException();
-            };
-        return ranges.FindNearest(distanceFunc);
+        TIndex DistanceFunc(ref readonly Range<TObject, TIndex> item)
+        {
+            var rangeScope = index.IsInRange(item.Min, item.Max);
+            switch (rangeScope)
+            {
+                case InRange.In:
+                    return TIndex.Zero;
+                case InRange.BelowLower:
+                    return index - item.Min; // TODO: why it gives same result as item.Min - index? missing test?
+                case InRange.AboveHigher:
+                    return index - item.Max;
+            }
+
+            throw new NotImplementedException();
+        }
+
+        return ranges.FindNearest(DistanceFunc);
     }
 
     /// <summary>

@@ -7,6 +7,7 @@ public partial class AVLTree<T, TNumber> : IReadOnlyCollection<T>
     where TNumber : IBinaryInteger<TNumber>, ISignedNumber<TNumber>, IConvertible
 {
     public readonly DistanceWithValueRef<T, T, TNumber> DistanceFunc;
+
     public AVLTree(DistanceWithValueRef<T, T, TNumber> distanceFunc)
     {
         DistanceFunc = distanceFunc;
@@ -15,6 +16,7 @@ public partial class AVLTree<T, TNumber> : IReadOnlyCollection<T>
     internal Node? Root {get; private set; }
 
     public bool IsEmpty => Root is null;
+
     public int Count {get; private set;}
 
     public void Add(T item)

@@ -3,7 +3,8 @@
 internal class Index<TKey, TValue>
     where TKey : struct, IComparable<TKey>
 {
-    ReadWriteSettings defaultSettings;
+    private readonly ReadWriteSettings defaultSettings;
+
     public Index(ReadWriteSettings? settings)
     {
         defaultSettings = settings ?? new ReadWriteSettings();

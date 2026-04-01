@@ -1,19 +1,17 @@
-﻿
-using System.Collections;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace SeriesCache;
 
-public partial class AVLTree<T, TNumber> : IEnumerable<T>, IReadOnlyCollection<T>
+public partial class AVLTree<T, TNumber>
     where TNumber : IBinaryInteger<TNumber>, ISignedNumber<TNumber>, IConvertible
 {
     [DebuggerDisplay("Node={Value}")]
     public class Node
     {
         private AVLTree<T, TNumber>? owner;
-        private T value;
+        private readonly T value;
         public Node(T value, AVLTree<T, TNumber> owner, Node? parent)
         {
             this.owner = owner ?? throw new ArgumentNullException(nameof(owner));
@@ -27,12 +25,12 @@ public partial class AVLTree<T, TNumber> : IEnumerable<T>, IReadOnlyCollection<T
         public T Value 
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return value; }
+            get => value;
         }
         public ref readonly T RefValue 
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get { return ref value; }
+            get => ref value;
         }
         public int Height {get; private set;}
 

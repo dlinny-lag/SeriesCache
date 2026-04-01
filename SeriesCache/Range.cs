@@ -13,6 +13,7 @@ public class Range<TIndex>
     public Range()
     {
     }
+
     public Range(TIndex min, TIndex max)
     {
         Min = min;
@@ -27,7 +28,7 @@ internal sealed partial class Range<TObject, TIndex> : Range<TIndex>
     where TObject : struct
     where TIndex : unmanaged, IBinaryInteger<TIndex>, ISignedNumber<TIndex>, IMinMaxValue<TIndex>, IConvertible
 {
-    private readonly TObject[] _objects;
+    private readonly TObject[] objects;
 
     public Range(Span<TObject> segment)
     {
@@ -37,7 +38,7 @@ internal sealed partial class Range<TObject, TIndex> : Range<TIndex>
         if (!IndexAccessor.IsRegistered<TObject, TIndex>())
             throw new InvalidOperationException("Index filed accessor is not initialized");
 
-        _objects = new TObject[segment.Length];
+        objects = new TObject[segment.Length];
 
         TIndex? prev = null;
         for(int i = 0; i < segment.Length; i++)
@@ -46,7 +47,7 @@ internal sealed partial class Range<TObject, TIndex> : Range<TIndex>
             {
                 prev = IndexAccessor.GetIndex<TObject, TIndex>(ref segment[i]);
                 Min = prev.Value;
-                _objects[i] = segment[i];
+                objects[i] = segment[i];
                 continue;
             }
             TIndex curr = IndexAccessor.GetIndex<TObject, TIndex>(ref segment[i]);
@@ -54,7 +55,7 @@ internal sealed partial class Range<TObject, TIndex> : Range<TIndex>
                 throw new ArgumentException("Must be ordered ascending. No duplications allowed", nameof(segment)); // TODO: apply OverwriteMode
             prev = curr;
 
-            _objects[i] = segment[i];
+            objects[i] = segment[i];
         }
         Max = prev!.Value;
     }
@@ -63,20 +64,22 @@ internal sealed partial class Range<TObject, TIndex> : Range<TIndex>
     /// Returns new object
     /// </summary>
     /// <param name="other"></param>
+    /// <param name="mode"></param>
     /// <returns></returns>
     [Pure]
     public Range<TObject, TIndex> Merge(Range<TObject, TIndex> other, OverwriteMode mode = default)
     {
         if (Min <= other.Min)
-            return new Range<TObject, TIndex>(mode, _objects, other._objects);
+            return new Range<TObject, TIndex>(mode, objects, other.objects);
         else
-            return new Range<TObject, TIndex>(mode, other._objects, _objects);
+            return new Range<TObject, TIndex>(mode, other.objects, objects);
     }
 
-    public ReadOnlyMemory<TObject> Values => _objects;
-    public ReadOnlySpan<TObject> ValuesRef => _objects;
+    public ReadOnlyMemory<TObject> Values => objects;
 
-    internal TObject[] ToArray() => (TObject[])_objects.Clone();
+    public ReadOnlySpan<TObject> ValuesRef => objects;
+
+    internal TObject[] ToArray() => (TObject[])objects.Clone();
 
     public TIndex Center => (Min+Max) >> 1;
 
@@ -92,16 +95,13 @@ internal sealed partial class Range<TObject, TIndex> : Range<TIndex>
         if (index.IsInRange(Min, Max) != InRange.In)
             return -1;
 
-        unsafe
-        {
-            int searchResult = _objects.BinarySearchUnsafe(index);
-            if (searchResult < 0)
-                return null;
-            return searchResult;
-        }
+        int searchResult = objects.BinarySearchUnsafe(index);
+        if (searchResult < 0)
+            return null;
+        return searchResult;
     }
 
-    public IntersectResult<TIndex> TestInstersection(Range<TObject, TIndex> other)
+    public IntersectResult<TIndex> TestIntersection(Range<TObject, TIndex> other)
     {
         return RangeCalculationExtensions.TestIntersection(Min, Max, other.Min, other.Max);
     }

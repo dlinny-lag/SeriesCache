@@ -38,6 +38,7 @@ public static class IndexAccessor
     /// Returns found offset of an index field inside <typeparamref name="TObject"/> structure
     /// </summary>
     /// <typeparam name="TIndex"></typeparam>
+    /// <typeparam name="TObject"></typeparam>
     /// <param name="fieldsPath"></param>
     /// <param name="ignoreSigness"></param>
     /// <returns></returns>
@@ -89,9 +90,9 @@ public static class IndexAccessor
         where TObject : struct
         where TIndex : unmanaged, IBinaryInteger<TIndex>
     {
-        static Field descriptor;
-        static int TObjectSize = MemoryInspectionHelper.GetSizeOfValueTypeInstance<TObject>();
-        public unsafe static void Register(int indexFieldOffset)
+        private static Field descriptor;
+        private static readonly int objectSize = MemoryInspectionHelper.GetSizeOfValueTypeInstance<TObject>();
+        public static unsafe void Register(int indexFieldOffset)
         {
             if (descriptor.Size == 0)
                 descriptor = new Field(indexFieldOffset, sizeof(TIndex));
@@ -109,19 +110,17 @@ public static class IndexAccessor
         private static bool IsNotRegistered() => descriptor.Size == 0;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public unsafe static TIndex GetIndex(ref TObject obj)
+        public static unsafe TIndex GetIndex(ref TObject obj)
         {
             if (IsNotRegistered())
                 throw new InvalidOperationException($"No index offset registered for {typeof(TObject).FullName}");
-            unsafe 
-            {
-                byte* mem = (byte*)Unsafe.AsPointer(ref obj);
-                mem += descriptor.Offset;
-                return *(TIndex*)mem;
-            }
+
+            byte* mem = (byte*)Unsafe.AsPointer(ref obj);
+            mem += descriptor.Offset;
+            return *(TIndex*)mem;
         }
 
-        public unsafe static int BinarySearch(TObject[] values, TIndex search)
+        public static unsafe int BinarySearch(TObject[] values, TIndex search)
         {
             if (IsNotRegistered())
                 throw new InvalidOperationException($"No index offset registered for {typeof(TObject).FullName}");
@@ -136,7 +135,7 @@ public static class IndexAccessor
                 {
                     mid = first + ((last - first) >> 1);
 
-                    TIndex* ptr = (TIndex*)(start + mid*TObjectSize);
+                    TIndex* ptr = (TIndex*)(start + mid*objectSize);
                     TIndex compareResult = search - *ptr;
 
                     if (compareResult == TIndex.Zero) 

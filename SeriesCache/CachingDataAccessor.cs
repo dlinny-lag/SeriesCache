@@ -10,19 +10,19 @@ public class CachingDataAccessor<TObject, TIndex>
     where TIndex : unmanaged, IBinaryInteger<TIndex>, ISignedNumber<TIndex>, IMinMaxValue<TIndex>, IConvertible
 {
     /// <summary>
-    /// must returns objects sequence ordered ascending
+    /// must return objects sequence ordered ascending
     /// </summary>
     /// <param name="start"></param>
     /// <param name="end"></param>
     /// <returns></returns>
     public delegate Task<IEnumerable<TObject>> DataAccessor(TIndex start, TIndex end);
 
-    public delegate void ObjectWritiningFunction(BinaryWriter writer, ref readonly TObject obj);
+    public delegate void ObjectWritingFunction(BinaryWriter writer, ref readonly TObject obj);
     public delegate TObject[] ObjectsReadingFunction(BinaryReader reader, int count);
     
     RangesSet<TObject, TIndex> cache;
-    DataAccessor getData;
-    TIndex mergeDistance;
+    private readonly DataAccessor getData;
+    private readonly TIndex mergeDistance;
     public CachingDataAccessor(DataAccessor accessorFunc, ReadWriteSettings? settings = null, TIndex mergeDistance = default)
     {
         cache = new RangesSet<TObject, TIndex>(settings);
@@ -32,7 +32,7 @@ public class CachingDataAccessor<TObject, TIndex>
 
     private class EnumeratorAccessor : IEnumerable<Range<TObject, TIndex>>
     {
-        private RangesSet<TObject, TIndex> enumerable;
+        private readonly RangesSet<TObject, TIndex> enumerable;
         public EnumeratorAccessor(RangesSet<TObject, TIndex> enumerable)
         {
             this.enumerable = enumerable;
@@ -55,9 +55,9 @@ public class CachingDataAccessor<TObject, TIndex>
     /// <param name="stream"></param>
     /// <param name="writingFunc"></param>
     /// <param name="encoding"><see cref="Encoding.UTF8"/> is used if unspecified</param>
-    public void SerializeCache(Stream stream, ObjectWritiningFunction writingFunc, Encoding? encoding = null)
+    public void SerializeCache(Stream stream, ObjectWritingFunction writingFunc, Encoding? encoding = null)
     {
-        using(var writer = new BinaryWriter(stream, encoding ?? Encoding.UTF8, false)) 
+        using (var writer = new BinaryWriter(stream, encoding ?? Encoding.UTF8, false)) 
         {
             writer.Write((int)cache.SegmentsCount);
             foreach(var range in new EnumeratorAccessor(cache))
@@ -70,7 +70,6 @@ public class CachingDataAccessor<TObject, TIndex>
             }
         }
     }
-
 
     /// <summary>
     /// Discards existing cache
@@ -87,8 +86,8 @@ public class CachingDataAccessor<TObject, TIndex>
             int segmentsCount = reader.ReadInt32();
             for (int i = 0; i < segmentsCount; i++)
             {
-                int segmentLenght = reader.ReadInt32();
-                var segment = readingFunc(reader, segmentLenght);
+                int segmentLength = reader.ReadInt32();
+                var segment = readingFunc(reader, segmentLength);
                 newCache.AddRange(segment);
             }
         }

@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Numerics;
 
 namespace SeriesCache;
 
@@ -19,7 +14,7 @@ internal sealed partial class Range<TObject, TIndex>
         /// </summary>
         public int Index;
         /// <summary>
-        /// just cache of segement[this.Index]
+        /// just cache of segment[this.Index]
         /// </summary>
         public TIndex Value;
         /// <summary>
@@ -33,7 +28,6 @@ internal sealed partial class Range<TObject, TIndex>
     /// returns -1 if no more unprocessed elements 
     /// </summary>
     /// <param name="current"></param>
-    /// <param name="segments"></param>
     /// <returns></returns>
     static int FindFirstMin(ref Span<SegmentInfo> current)
     {
@@ -106,7 +100,7 @@ internal sealed partial class Range<TObject, TIndex>
         {
             TIndex newValue = IndexAccessor.GetIndex<TObject, TIndex>(ref segment[curInfo.Index]);
             if (newValue < curInfo.Value)
-                throw new ArgumentException("All segements must be ordered ascending", "segments"); // argument of ctr
+                throw new ArgumentException("All segments must be ordered ascending", "segments"); // argument of ctr
             curInfo.Value = newValue;
         }
         return curInfo.Value;
@@ -115,6 +109,7 @@ internal sealed partial class Range<TObject, TIndex>
     /// <summary>
     /// Note: segment's ranges can be intersecting
     /// </summary>
+    /// <param name="mode"></param>
     /// <param name="segments"></param>
     /// <exception cref="ArgumentException"></exception>
     /// <exception cref="InvalidOperationException"></exception>
@@ -126,7 +121,7 @@ internal sealed partial class Range<TObject, TIndex>
         Span<SegmentInfo> current = stackalloc SegmentInfo[segments.Length];
 
         Min = TIndex.MaxValue;
-        int totalLegth = 0;
+        int totalLength = 0;
         int currentMinIndex = -1;
         for (int s = 0; s < segments.Length; s++)
         {
@@ -135,7 +130,7 @@ internal sealed partial class Range<TObject, TIndex>
                 TIndex min = IndexAccessor.GetIndex<TObject, TIndex>(ref segments[s][0]);
                 current[s].Index = 0;
                 current[s].Value = min;
-                ++totalLegth;
+                ++totalLength;
                 if (min < Min) // oldest segment should be picked, so strictly less check
                 {
                     currentMinIndex = s;
@@ -149,11 +144,11 @@ internal sealed partial class Range<TObject, TIndex>
             }
         }
         
-        if (totalLegth == 0)
+        if (totalLength == 0)
             throw new ArgumentException("At least one element is required", nameof(segments));
 
 
-        List<TObject> result = new List<TObject>(totalLegth);
+        List<TObject> result = new List<TObject>(totalLength);
         do 
         {
             ref SegmentInfo min = ref current[currentMinIndex];
@@ -169,7 +164,7 @@ internal sealed partial class Range<TObject, TIndex>
                     if (i == currentMinIndex)
                         continue; // some elements in current segment may remain uncopied
                     if (!current[i].Finished)
-                        throw new ArgumentException("All segements must be ordered ascending", nameof(segments));
+                        throw new ArgumentException("All segments must be ordered ascending", nameof(segments));
                 }
                 // copy the rest of the current segment, it is the last segment to proceed
                 if (!min.Finished)
@@ -177,7 +172,7 @@ internal sealed partial class Range<TObject, TIndex>
                     var span = segments[currentMinIndex].AsSpan();
                     var rest = span.Slice(min.Index, span.Length-min.Index);
                     result.AddRange(rest);
-                    Max = IndexAccessor.GetIndex<TObject, TIndex>(ref rest[rest.Length-1]);
+                    Max = IndexAccessor.GetIndex<TObject, TIndex>(ref rest[^1]);
                 }
 // exit point
                 break; // no more unprocessed elements in segments
@@ -189,7 +184,7 @@ internal sealed partial class Range<TObject, TIndex>
             {
                 // it is possible that found duplication is not the only one.
                 // store all duplications in a list
-                List<int> duplicationSegments = new List<int>{currentMinIndex, nextMinIndex};
+                List<int> duplicationSegments = [currentMinIndex, nextMinIndex];
                
                 switch(mode)
                 {
@@ -198,7 +193,7 @@ internal sealed partial class Range<TObject, TIndex>
                     case OverwriteMode.Replace:
                         { 
                             AppendDuplicates(ref current, min.Value, duplicationSegments);
-                            // pick element from newest segment, i.e. with highest index
+                            // pick element from the newest segment, i.e. with the highest index
                             int dupIndex = duplicationSegments.Max();
                             result.Add(segments[dupIndex][current[dupIndex].Index]);
                         }
@@ -206,7 +201,7 @@ internal sealed partial class Range<TObject, TIndex>
                     case OverwriteMode.Skip:
                         {
                             AppendDuplicates(ref current, min.Value, duplicationSegments);
-                            // pick element from oldest segment, i.e. with lowest index
+                            // pick element from the oldest segment, i.e. with the lowest index
                             int dupIndex = duplicationSegments.Min();
                             result.Add(segments[dupIndex][current[dupIndex].Index]);
                         }
@@ -253,6 +248,6 @@ internal sealed partial class Range<TObject, TIndex>
         while (true);
 
 
-        _objects = result.ToArray();
+        objects = result.ToArray();
     }
 }

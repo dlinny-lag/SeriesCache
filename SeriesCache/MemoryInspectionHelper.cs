@@ -7,7 +7,6 @@ namespace SeriesCache;
 internal static class MemoryInspectionHelper
 {
     // see https://devblogs.microsoft.com/premier-developer/managed-object-internals-part-4-fields-layout/
-
     public static string Layout<T>(ref readonly T obj) where T : struct
     {
         StringBuilder sb = new StringBuilder();
@@ -34,7 +33,7 @@ internal static class MemoryInspectionHelper
         var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
         if (fields.Length == 0)
         {
-            return Array.Empty<(FieldInfo, int)>();
+            return [];
         }
 
         Func<object, long[]> fieldOffsetInspector = GenerateFieldOffsetInspectionFunction(fields);
@@ -54,7 +53,7 @@ internal static class MemoryInspectionHelper
         var fields = typeof(T).GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic);
         if (fields.Length == 0)
         {
-            return Array.Empty<(FieldInfo, int)>();
+            return [];
         }
         Func<object, long[]> fieldOffsetInspector = GenerateFieldOffsetInspectionFunction(fields);
 
@@ -123,6 +122,7 @@ internal static class MemoryInspectionHelper
 #pragma warning restore 0649
         //public SizeComputer(T dummyField, T offset) => (this.dummyField, this.offset) = (dummyField, offset);
     }
+
     public static int GetSizeOfValueTypeInstance<T>() where T : struct
     {
         // The offset of the second field is the size of the 'type'
